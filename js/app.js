@@ -13,6 +13,10 @@ let state = {
 // All component data loaded from threats.json at startup
 let allComponents = [];
 
+// Impact and feasibility options (order matters — matches PRD table and risk.js)
+const IMPACT_LEVELS      = ['Negligible', 'Moderate', 'Major', 'Severe'];
+const FEASIBILITY_LEVELS = ['Very hard', 'Hard', 'Moderate', 'Easy'];
+
 // ---------------------------------------------------------------------------
 // Boot: fetch data and render home screen
 // ---------------------------------------------------------------------------
@@ -51,6 +55,7 @@ function renderHomeScreen() {
     const card = document.createElement('button');
     card.className = 'component-card';
     card.setAttribute('aria-label', `Assess ${component.name}`);
+    card.setAttribute('role', 'listitem');
 
     const iconSrc = getIconSrc(component.id);
     card.innerHTML = `
@@ -71,7 +76,11 @@ function renderHomeScreen() {
 }
 
 function getIconSrc(componentId) {
-  const map = { tcu: 'assets/icons/tcu.svg', ota: 'assets/icons/ota.svg', keyless: 'assets/icons/keyless.svg' };
+  const map = {
+    tcu:     'assets/icons/tcu.svg',
+    ota:     'assets/icons/ota.svg',
+    keyless: 'assets/icons/keyless.svg'
+  };
   return map[componentId] ?? 'assets/icons/tcu.svg';
 }
 
@@ -86,26 +95,275 @@ function showScreen(id) {
 }
 
 // ---------------------------------------------------------------------------
-// Component selection — navigates to rating screen (slice 2+)
+// Component selection → rating screen
 // ---------------------------------------------------------------------------
 
 function selectComponent(component) {
   state.selectedComponent = component;
-  // Initialise ratings for every threat in this component
   state.ratings = {};
   component.threats.forEach(threat => {
     state.ratings[threat.id] = { impact: null, feasibility: null };
   });
   renderRatingScreen();
   showScreen('screen-rating');
+  // Scroll to top so heading is visible
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
-// Stub — implemented fully in slice 2
+// ---------------------------------------------------------------------------
+// Rating screen — full render
+// ---------------------------------------------------------------------------
+
 function renderRatingScreen() {
-  const heading = document.getElementById('rating-heading');
-  if (heading && state.selectedComponent) {
-    heading.textContent = `${state.selectedComponent.name}: ${state.selectedComponent.threatCount} threats to assess`;
+  const comp = state.selectedComponent;
+
+  // Heading and subheading
+  document.getElementById('rating-heading').textContent =
+    `${comp.name}: ${comp.threatCount} threat${comp.threatCount !== 1 ? 's' : ''} to assess`;
+  document.getElementById('rating-subheading').textContent = comp.description;
+
+  // Summary bar (initial empty state)
+  updateSummaryBar();
+
+  // Threat cards
+  const stack = document.getElementById('threat-stack');
+  stack.innerHTML = '';
+  comp.threats.forEach(threat => {
+    stack.appendChild(buildThreatCard(threat));
+  });
+
+  // Progress counter + export button
+  updateProgressCounter();
+  updateExportButton();
+
+  // Wire ← Back button (leave warning added in slice 5)
+  document.getElementById('btn-back').onclick = handleBack;
+
+  // Hide leave warning (in case it was visible from a previous session)
+  document.getElementById('leave-warning').hidden = true;
+}
+
+// ---------------------------------------------------------------------------
+// Build a single threat card DOM node
+// ---------------------------------------------------------------------------
+
+function buildThreatCard(threat) {
+  const card = document.createElement('article');
+  card.className = 'threat-card';
+  card.id = `card-${threat.id}`;
+
+  card.innerHTML = `
+    <div class="threat-card__header">
+      <h3 class="threat-card__title">${escapeHtml(threat.title)}</h3>
+      <span class="badge badge--unrated" id="badge-${threat.id}" aria-live="polite">Not rated</span>
+    </div>
+    <p class="threat-card__explanation">${escapeHtml(threat.explanation)}</p>
+    <span class="threat-card__category">${escapeHtml(threat.annex5Category)}</span>
+
+    <div class="step-selectors">
+      <div class="step-selector">
+        <span class="step-selector__label" id="impact-label-${threat.id}">Impact</span>
+        <div class="step-selector__buttons" role="group" aria-labelledby="impact-label-${threat.id}">
+          ${IMPACT_LEVELS.map(level => `
+            <button class="step-btn"
+                    data-threat="${threat.id}"
+                    data-dimension="impact"
+                    data-value="${escapeHtml(level)}"
+                    aria-pressed="false">
+              ${escapeHtml(level)}
+            </button>`).join('')}
+        </div>
+      </div>
+      <div class="step-selector">
+        <span class="step-selector__label" id="feasibility-label-${threat.id}">Attack feasibility</span>
+        <div class="step-selector__buttons" role="group" aria-labelledby="feasibility-label-${threat.id}">
+          ${FEASIBILITY_LEVELS.map(level => `
+            <button class="step-btn"
+                    data-threat="${threat.id}"
+                    data-dimension="feasibility"
+                    data-value="${escapeHtml(level)}"
+                    aria-pressed="false">
+              ${escapeHtml(level)}
+            </button>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <button class="risk-grid-link" data-threat="${threat.id}" aria-haspopup="dialog">
+      How is risk calculated?
+    </button>
+
+    <div class="mitigations" id="mitigations-${threat.id}" aria-hidden="true">
+      <div class="mitigations__inner">
+        <p class="mitigations__heading">What you can do</p>
+        <ul class="mitigations__list">
+          ${threat.mitigations.map(m => `<li>${escapeHtml(m)}</li>`).join('')}
+        </ul>
+      </div>
+    </div>`;
+
+  // Wire step-selector button clicks
+  card.querySelectorAll('.step-btn').forEach(btn => {
+    btn.addEventListener('click', handleStepSelect);
+  });
+
+  // Wire risk grid link (implemented fully in slice 4; no-op for now)
+  card.querySelector('.risk-grid-link').addEventListener('click', handleRiskGridOpen);
+
+  return card;
+}
+
+// ---------------------------------------------------------------------------
+// Step selector interaction (slice 2 — wires UI; slice 3 adds risk logic)
+// ---------------------------------------------------------------------------
+
+function handleStepSelect(e) {
+  const btn       = e.currentTarget;
+  const threatId  = btn.dataset.threat;
+  const dimension = btn.dataset.dimension; // "impact" or "feasibility"
+  const value     = btn.dataset.value;
+
+  // Update state
+  state.ratings[threatId][dimension] = value;
+
+  // Update button pressed states within this group
+  const group = btn.closest('.step-selector__buttons');
+  group.querySelectorAll('.step-btn').forEach(b => {
+    b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+  });
+
+  // Update risk display for this card (implemented in slice 3)
+  updateThreatCard(threatId);
+
+  // Update summary and progress
+  updateSummaryBar();
+  updateProgressCounter();
+  updateExportButton();
+}
+
+// ---------------------------------------------------------------------------
+// Update a single threat card's badge, border, and mitigations
+// (risk logic wired in slice 3 — returns null here, keeps "Not rated")
+// ---------------------------------------------------------------------------
+
+function updateThreatCard(threatId) {
+  const rating = state.ratings[threatId];
+  const risk   = getRisk(rating.impact, rating.feasibility); // from risk.js
+
+  const card        = document.getElementById(`card-${threatId}`);
+  const badge       = document.getElementById(`badge-${threatId}`);
+  const mitigations = document.getElementById(`mitigations-${threatId}`);
+
+  // Clear existing risk classes
+  card.classList.remove('threat-card--low', 'threat-card--medium', 'threat-card--high');
+  badge.classList.remove('badge--low', 'badge--medium', 'badge--high', 'badge--unrated');
+
+  if (!risk) {
+    // One or both selectors not yet set
+    badge.classList.add('badge--unrated');
+    badge.textContent = 'Not rated';
+    mitigations.classList.remove('is-open');
+    mitigations.setAttribute('aria-hidden', 'true');
+    return;
   }
+
+  const riskLower = risk.toLowerCase(); // "low" | "medium" | "high"
+  card.classList.add(`threat-card--${riskLower}`);
+  badge.classList.add(`badge--${riskLower}`);
+  badge.textContent = risk;
+
+  // Show mitigations for Medium and High; hide for Low
+  if (risk === 'Low') {
+    mitigations.classList.remove('is-open');
+    mitigations.setAttribute('aria-hidden', 'true');
+  } else {
+    mitigations.classList.add('is-open');
+    mitigations.setAttribute('aria-hidden', 'false');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Summary bar
+// ---------------------------------------------------------------------------
+
+function updateSummaryBar() {
+  const bar = document.getElementById('summary-bar');
+  const counts = { High: 0, Medium: 0, Low: 0, unrated: 0 };
+
+  Object.values(state.ratings).forEach(r => {
+    const risk = getRisk(r.impact, r.feasibility);
+    if (risk) counts[risk]++;
+    else counts.unrated++;
+  });
+
+  const total = Object.values(state.ratings).length;
+  if (counts.unrated === total) {
+    bar.textContent = 'Rate each threat to see your summary.';
+    return;
+  }
+
+  const parts = [];
+  if (counts.High   > 0) parts.push(`${counts.High} High`);
+  if (counts.Medium > 0) parts.push(`${counts.Medium} Medium`);
+  if (counts.Low    > 0) parts.push(`${counts.Low} Low`);
+  if (counts.unrated > 0) parts.push(`${counts.unrated} Not rated`);
+
+  bar.textContent = parts.join(' · ');
+}
+
+// ---------------------------------------------------------------------------
+// Progress counter
+// ---------------------------------------------------------------------------
+
+function updateProgressCounter() {
+  const total  = Object.keys(state.ratings).length;
+  const rated  = Object.values(state.ratings).filter(r => r.impact && r.feasibility).length;
+  document.getElementById('progress-counter').textContent =
+    `${rated} of ${total} threat${total !== 1 ? 's' : ''} rated`;
+}
+
+// ---------------------------------------------------------------------------
+// Export button enable/disable
+// ---------------------------------------------------------------------------
+
+function updateExportButton() {
+  const total  = Object.keys(state.ratings).length;
+  const rated  = Object.values(state.ratings).filter(r => r.impact && r.feasibility).length;
+  const btn    = document.getElementById('btn-export');
+  const allDone = rated === total && total > 0;
+  btn.disabled = !allDone;
+  btn.setAttribute('aria-disabled', String(!allDone));
+}
+
+// ---------------------------------------------------------------------------
+// ← Back handler (leave warning added in slice 5)
+// ---------------------------------------------------------------------------
+
+function handleBack() {
+  // Slice 5 will add a leave-warning check here.
+  // For now: navigate directly to home.
+  goHome();
+}
+
+function goHome() {
+  state.selectedComponent = null;
+  state.ratings = {};
+  document.getElementById('leave-warning').hidden = true;
+  renderHomeScreen();
+}
+
+// ---------------------------------------------------------------------------
+// Risk grid modal (wired fully in slice 4)
+// ---------------------------------------------------------------------------
+
+function handleRiskGridOpen(e) {
+  // Slice 4 implements this. No-op placeholder.
+  const threatId = e.currentTarget.dataset.threat;
+  openRiskGridModal(threatId);
+}
+
+function openRiskGridModal(threatId) {
+  // Implemented in slice 4
 }
 
 // ---------------------------------------------------------------------------
