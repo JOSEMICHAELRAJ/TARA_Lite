@@ -12,8 +12,10 @@
   <!-- Styles -->
   <link rel="stylesheet" href="style.css">
 
-  <!-- html2pdf.js — vendored locally (no CDN dependency) -->
-  <script src="vendor/html2pdf.bundle.min.js" defer></script>
+  <!-- jsPDF + autotable — vendored locally (no CDN dependency) -->
+  <!-- autotable must load after jsPDF; both must load before app scripts -->
+  <script src="vendor/jspdf.umd.min.js"></script>
+  <script src="vendor/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
