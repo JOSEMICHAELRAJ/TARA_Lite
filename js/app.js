@@ -239,6 +239,9 @@ function handleStepSelect(e) {
   updateSummaryBar();
   updateProgressCounter();
   updateExportButton();
+
+  // Register/clear beforeunload guard based on whether any ratings now exist
+  updateBeforeUnload();
 }
 
 // ---------------------------------------------------------------------------
@@ -336,16 +339,61 @@ function updateExportButton() {
 }
 
 // ---------------------------------------------------------------------------
-// ← Back handler (leave warning added in slice 5)
+// Leave warning and beforeunload guard
+// Implements prd.md → States and Boundaries
 // ---------------------------------------------------------------------------
 
+// Returns true if at least one threat has been rated (either dimension set)
+function hasAnyRatings() {
+  return Object.values(state.ratings).some(r => r.impact || r.feasibility);
+}
+
+// Register/deregister the browser-level leave guard
+function updateBeforeUnload() {
+  if (hasAnyRatings()) {
+    window.onbeforeunload = (e) => {
+      e.preventDefault();
+      // Modern browsers ignore the return string but still show their own dialog
+      return '';
+    };
+  } else {
+    window.onbeforeunload = null;
+  }
+}
+
+// ← Back handler
 function handleBack() {
-  // Slice 5 will add a leave-warning check here.
-  // For now: navigate directly to home.
+  if (hasAnyRatings()) {
+    showLeaveWarning();
+  } else {
+    goHome();
+  }
+}
+
+function showLeaveWarning() {
+  const warning = document.getElementById('leave-warning');
+  const text    = document.getElementById('leave-warning-text');
+  const comp    = state.selectedComponent;
+
+  text.textContent = `Leave this assessment? Your ratings for ${comp.name} will be lost.`;
+  warning.hidden = false;
+
+  // Wire buttons (use { once: true } so handlers don't stack on repeated clicks)
+  document.getElementById('btn-stay').addEventListener('click', handleStay,  { once: true });
+  document.getElementById('btn-leave').addEventListener('click', handleLeave, { once: true });
+}
+
+function handleStay() {
+  document.getElementById('leave-warning').hidden = true;
+}
+
+function handleLeave() {
   goHome();
 }
 
 function goHome() {
+  // Clear beforeunload before navigating so the guard doesn't fire on home actions
+  window.onbeforeunload = null;
   state.selectedComponent = null;
   state.ratings = {};
   document.getElementById('leave-warning').hidden = true;
