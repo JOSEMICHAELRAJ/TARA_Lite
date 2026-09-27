@@ -139,6 +139,9 @@ function renderRatingScreen() {
   // Wire ← Back button (leave warning added in slice 5)
   document.getElementById('btn-back').onclick = handleBack;
 
+  // Wire Export button
+  document.getElementById('btn-export').onclick = buildAndExportPDF;
+
   // Hide leave warning (in case it was visible from a previous session)
   document.getElementById('leave-warning').hidden = true;
 }
