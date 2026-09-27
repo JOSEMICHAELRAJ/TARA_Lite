@@ -353,17 +353,60 @@ function goHome() {
 }
 
 // ---------------------------------------------------------------------------
-// Risk grid modal (wired fully in slice 4)
+// Risk grid modal
 // ---------------------------------------------------------------------------
 
 function handleRiskGridOpen(e) {
-  // Slice 4 implements this. No-op placeholder.
   const threatId = e.currentTarget.dataset.threat;
   openRiskGridModal(threatId);
 }
 
 function openRiskGridModal(threatId) {
-  // Implemented in slice 4
+  const modal   = document.getElementById('modal-risk-grid');
+  const table   = document.getElementById('risk-grid-table');
+  const rating  = state.ratings[threatId] || { impact: null, feasibility: null };
+
+  // Clear any previous highlight
+  table.querySelectorAll('td.cell--highlighted').forEach(td => {
+    td.classList.remove('cell--highlighted');
+  });
+
+  // Highlight the current cell if both values are set
+  if (rating.impact && rating.feasibility) {
+    // Rows: Negligible=1, Moderate=2, Major=3, Severe=4 (0 is header)
+    // Cols: Very hard=1, Hard=2, Moderate=3, Easy=4 (0 is row header)
+    const rowIndex = IMPACT_LEVELS.indexOf(rating.impact);       // 0-based tbody row
+    const colIndex = FEASIBILITY_LEVELS.indexOf(rating.feasibility) + 1; // 1-based (col 0 = <th>)
+    const tbody = table.querySelector('tbody');
+    const row   = tbody.rows[rowIndex];
+    if (row) {
+      // col 0 is the <th> row header, data cells start at index 1
+      const cell = row.cells[colIndex];
+      if (cell) cell.classList.add('cell--highlighted');
+    }
+  }
+
+  modal.hidden = false;
+
+  // Close handlers
+  const closeBtn = document.getElementById('btn-close-risk-modal');
+  const onClose  = () => closeRiskGridModal();
+  closeBtn.addEventListener('click', onClose, { once: true });
+
+  // Close on backdrop click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeRiskGridModal();
+  }, { once: true });
+
+  // Close on Escape
+  const onKeydown = (e) => {
+    if (e.key === 'Escape') { closeRiskGridModal(); document.removeEventListener('keydown', onKeydown); }
+  };
+  document.addEventListener('keydown', onKeydown);
+}
+
+function closeRiskGridModal() {
+  document.getElementById('modal-risk-grid').hidden = true;
 }
 
 // ---------------------------------------------------------------------------
