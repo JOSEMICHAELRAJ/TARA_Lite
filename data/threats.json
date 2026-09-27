@@ -1,0 +1,180 @@
+{
+    "components": [
+        {
+            "id": "tcu",
+            "name": "Telematics Unit (TCU)",
+            "description": "The car's connection to the outside world.",
+            "threatCount": 5,
+            "threats": [
+                {
+                    "id": "tcu-1",
+                    "title": "Attacker takes control remotely over the cellular connection",
+                    "explanation": "The telematics unit is always online. If it has an open service or an unpatched bug, an attacker anywhere in the world could break in and use it as a doorway to the rest of the car.",
+                    "annex5Category": "External connectivity and connections",
+                    "mitigations": [
+                        "Close every network port and service that isn't strictly needed",
+                        "Separate the telematics unit from safety-critical systems with a gateway firewall",
+                        "Keep the unit's software patched through secure updates"
+                    ]
+                },
+                {
+                    "id": "tcu-2",
+                    "title": "Fake server sends commands to the car",
+                    "explanation": "An attacker pretends to be the manufacturer's back-end server and sends commands such as 'unlock doors' or 'start engine'. If the car doesn't check who it is talking to, it will obey.",
+                    "annex5Category": "Communication channels",
+                    "mitigations": [
+                        "Use mutual authentication with certificates so both sides prove who they are",
+                        "Digitally sign every command and reject anything with an invalid signature"
+                    ]
+                },
+                {
+                    "id": "tcu-3",
+                    "title": "Vehicle data is intercepted in transit",
+                    "explanation": "Location, driving behaviour and personal data travel between the car and the cloud. Without encryption, anyone listening on the network can read or copy it.",
+                    "annex5Category": "Communication channels",
+                    "mitigations": [
+                        "Encrypt all traffic with up-to-date TLS",
+                        "Only send the data that is actually needed"
+                    ]
+                },
+                {
+                    "id": "tcu-4",
+                    "title": "Hacked back-end server is used to attack the whole fleet",
+                    "explanation": "If the manufacturer's server is compromised, the attacker doesn't need to hack cars one by one. They can send malicious instructions to thousands of vehicles at once.",
+                    "annex5Category": "Back-end servers",
+                    "mitigations": [
+                        "Harden servers and restrict admin access with strong authentication",
+                        "Monitor servers and fleet traffic for unusual behaviour",
+                        "Limit which commands the server is allowed to send to cars"
+                    ]
+                },
+                {
+                    "id": "tcu-5",
+                    "title": "Connection is flooded or jammed",
+                    "explanation": "An attacker floods the unit with traffic or jams the cellular signal, so remote services like emergency calls or remote lock stop working.",
+                    "annex5Category": "Communication channels",
+                    "mitigations": [
+                        "Rate-limit incoming connections and drop malformed traffic",
+                        "Design the car so safety functions keep working when the connection is lost"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ota",
+            "name": "OTA Update Module",
+            "description": "How the car receives software updates.",
+            "threatCount": 5,
+            "threats": [
+                {
+                    "id": "ota-1",
+                    "title": "Tampered software update is installed",
+                    "explanation": "An attacker modifies an update package to include malicious code. If the car installs it without checking, the attacker's code runs inside the vehicle.",
+                    "annex5Category": "Update procedures",
+                    "mitigations": [
+                        "Verify the digital signature of every update before installing it",
+                        "Use secure boot so only signed software can run"
+                    ]
+                },
+                {
+                    "id": "ota-2",
+                    "title": "Car is rolled back to an old, vulnerable version",
+                    "explanation": "An attacker installs an older but genuinely signed version of the software that has known security holes, then exploits those holes.",
+                    "annex5Category": "Update procedures",
+                    "mitigations": [
+                        "Use anti-rollback version counters so older versions are rejected",
+                        "Revoke signatures of versions with known serious vulnerabilities"
+                    ]
+                },
+                {
+                    "id": "ota-3",
+                    "title": "Interrupted update leaves the car unusable",
+                    "explanation": "Power loss or a dropped connection halfway through an update can leave a control unit with broken software, so the car may not start or may behave unpredictably.",
+                    "annex5Category": "Update procedures",
+                    "mitigations": [
+                        "Keep a backup copy of the working software and roll back automatically on failure",
+                        "Check battery level and that the car is parked safely before starting",
+                        "Tell the driver before and after the update what is happening"
+                    ]
+                },
+                {
+                    "id": "ota-4",
+                    "title": "Update server is compromised and pushes malicious updates",
+                    "explanation": "If an attacker gets into the system that builds or distributes updates, they could ship malicious software that looks completely legitimate to every car.",
+                    "annex5Category": "Back-end servers",
+                    "mitigations": [
+                        "Keep signing keys in a hardware security module, never on ordinary servers",
+                        "Require approval from more than one person to release an update"
+                    ]
+                },
+                {
+                    "id": "ota-5",
+                    "title": "Driver is tricked into installing a fake update",
+                    "explanation": "A phishing message or fake USB stick convinces the owner to 'update' their car with malicious software.",
+                    "annex5Category": "Unintended human actions",
+                    "mitigations": [
+                        "Only accept updates through the official, authenticated update channel",
+                        "Show clear in-car messages about where genuine updates come from"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "keyless",
+            "name": "Keyless Entry System",
+            "description": "How the car recognises its key.",
+            "threatCount": 5,
+            "threats": [
+                {
+                    "id": "keyless-1",
+                    "title": "Relay attack unlocks and starts the car",
+                    "explanation": "Two thieves use radio devices to relay the signal from a key inside the house to the car on the driveway. The car thinks the key is nearby and unlocks.",
+                    "annex5Category": "Communication channels",
+                    "mitigations": [
+                        "Use ultra-wideband distance measurement to confirm the key is really close",
+                        "Put the key fob to sleep when it hasn't moved for a while"
+                    ]
+                },
+                {
+                    "id": "keyless-2",
+                    "title": "Captured key signal is replayed later",
+                    "explanation": "An attacker records the signal when the owner presses the unlock button, then plays it back later to open the car.",
+                    "annex5Category": "Communication channels",
+                    "mitigations": [
+                        "Use rolling codes or challenge-response so each signal only works once"
+                    ]
+                },
+                {
+                    "id": "keyless-3",
+                    "title": "Jamming stops the car from locking",
+                    "explanation": "An attacker blocks the lock signal. The owner walks away thinking the car is locked, and the thief simply opens the door.",
+                    "annex5Category": "Communication channels",
+                    "mitigations": [
+                        "Give clear lock confirmation with lights, a sound or a phone notification",
+                        "Detect jamming and alert the owner"
+                    ]
+                },
+                {
+                    "id": "keyless-4",
+                    "title": "New key is programmed through the diagnostic port",
+                    "explanation": "A thief breaks into the car, plugs a device into the diagnostic port and programmes a blank key, then drives away.",
+                    "annex5Category": "External connectivity and connections",
+                    "mitigations": [
+                        "Require authenticated dealer access to programme new keys",
+                        "Notify the owner whenever a new key is added"
+                    ]
+                },
+                {
+                    "id": "keyless-5",
+                    "title": "Weak encryption in the key is cracked",
+                    "explanation": "If the key uses old or weak cryptography, attackers can work out its secret and create a working copy.",
+                    "annex5Category": "Other vulnerabilities",
+                    "mitigations": [
+                        "Use modern, well-reviewed cryptography such as AES-128 or stronger",
+                        "Give every vehicle and key its own unique secret"
+                    ]
+                }
+            ]
+        }
+    ]
+}

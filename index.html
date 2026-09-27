@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TARA Lite — First-pass Threat Analysis</title>
+  <meta name="description" content="A guided tool for running a first-pass Threat Analysis and Risk Assessment (TARA) for vehicle components. UNECE R155 oriented.">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- html2pdf.js CDN — loaded here for access in export.js (slice 6) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+          integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+3To5fRkPUAcyptPayuuhn3/538Le9/NI6LNLP3g=="
+          crossorigin="anonymous"
+          referrerpolicy="no-referrer"
+          defer></script>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- =====================================================================
+       App Header — shown on all screens
+       ===================================================================== -->
+  <header class="app-header" role="banner">
+    <div class="app-header__inner">
+      <p class="app-header__title">TARA Lite</p>
+      <p class="app-header__tagline">Run your first threat analysis in 5 minutes.</p>
+      <p class="app-header__context">UNECE R155 requires a TARA for every connected vehicle system. Pick a component to start.</p>
+    </div>
+  </header>
+
+  <!-- =====================================================================
+       Screen 1 — Home (component selection)
+       ===================================================================== -->
+  <main id="screen-home" aria-label="Component selection">
+
+    <div class="home-main">
+      <!-- Component cards — rendered by app.js from threats.json -->
+      <div id="component-grid" class="component-grid" role="list"></div>
+
+      <!-- Progress hint -->
+      <p class="progress-hint">
+        <span class="progress-hint__steps">
+          <span class="progress-hint__step">Pick component</span>
+          <span class="progress-hint__arrow" aria-hidden="true">→</span>
+          <span class="progress-hint__step">Rate threats</span>
+          <span class="progress-hint__arrow" aria-hidden="true">→</span>
+          <span class="progress-hint__step">Export report</span>
+        </span>
+      </p>
+    </div>
+
+  </main>
+
+  <!-- =====================================================================
+       Screen 2 — Threat rating
+       ===================================================================== -->
+  <main id="screen-rating" aria-label="Threat rating" hidden>
+
+    <div class="rating-main">
+
+      <!-- Leave warning (shown conditionally) -->
+      <div id="leave-warning" class="leave-warning" role="alert" hidden>
+        <span class="leave-warning__text" id="leave-warning-text">Leave this assessment? Your ratings will be lost.</span>
+        <div class="leave-warning__actions">
+          <button class="btn-stay" id="btn-stay">Stay</button>
+          <button class="btn-leave" id="btn-leave">Leave</button>
+        </div>
+      </div>
+
+      <!-- Back navigation -->
+      <button class="rating-back" id="btn-back" aria-label="Back to component selection">
+        ← Back
+      </button>
+
+      <!-- Component heading -->
+      <h1 class="rating-heading" id="rating-heading"></h1>
+      <p class="rating-subheading" id="rating-subheading"></p>
+
+      <!-- Live summary bar -->
+      <div class="summary-bar" id="summary-bar" aria-live="polite" aria-atomic="true">
+        Rate each threat to see your summary.
+      </div>
+
+      <!-- Threat cards — rendered by app.js -->
+      <div id="threat-stack" class="threat-stack"></div>
+
+      <!-- Footer: progress counter + export button -->
+      <div class="rating-footer">
+        <p class="progress-counter" id="progress-counter" aria-live="polite"></p>
+        <button class="btn-export" id="btn-export" disabled aria-disabled="true">
+          Export PDF report
+        </button>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- =====================================================================
+       Confirmation panel (shown after export — slice 6)
+       ===================================================================== -->
+  <div id="panel-confirmation" class="panel-overlay" role="dialog" aria-modal="true"
+       aria-labelledby="panel-title" hidden>
+    <div class="panel">
+      <div class="panel__icon" aria-hidden="true">✓</div>
+      <h2 class="panel__title" id="panel-title">Report downloaded</h2>
+      <p class="panel__message" id="panel-message"></p>
+      <div class="panel__actions">
+        <button class="btn-primary" id="btn-assess-another">Assess another component</button>
+        <button class="btn-secondary" id="btn-keep-editing">Keep editing</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       Risk grid modal (slice 4)
+       ===================================================================== -->
+  <div id="modal-risk-grid" class="modal-overlay" role="dialog" aria-modal="true"
+       aria-labelledby="modal-risk-title" hidden>
+    <div class="modal">
+      <div class="modal__header">
+        <h2 class="modal__title" id="modal-risk-title">How is risk calculated?</h2>
+        <button class="modal__close" id="btn-close-risk-modal" aria-label="Close risk grid">✕</button>
+      </div>
+      <table class="risk-grid-table" id="risk-grid-table" aria-label="4×4 risk matrix">
+        <thead>
+          <tr>
+            <th scope="col">Impact ↓ / Feasibility →</th>
+            <th scope="col">Very hard</th>
+            <th scope="col">Hard</th>
+            <th scope="col">Moderate</th>
+            <th scope="col">Easy</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Negligible</th>
+            <td class="cell--low"   >Low</td>
+            <td class="cell--low"   >Low</td>
+            <td class="cell--low"   >Low</td>
+            <td class="cell--low"   >Low</td>
+          </tr>
+          <tr>
+            <th scope="row">Moderate</th>
+            <td class="cell--low"   >Low</td>
+            <td class="cell--low"   >Low</td>
+            <td class="cell--medium">Medium</td>
+            <td class="cell--medium">Medium</td>
+          </tr>
+          <tr>
+            <th scope="row">Major</th>
+            <td class="cell--low"   >Low</td>
+            <td class="cell--medium">Medium</td>
+            <td class="cell--high"  >High</td>
+            <td class="cell--high"  >High</td>
+          </tr>
+          <tr>
+            <th scope="row">Severe</th>
+            <td class="cell--medium">Medium</td>
+            <td class="cell--medium">Medium</td>
+            <td class="cell--high"  >High</td>
+            <td class="cell--high"  >High</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="modal__footnote">Inspired by ISO/SAE 21434. Each cell is the risk level for that combination of impact and feasibility.</p>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       Footer / disclaimer
+       ===================================================================== -->
+  <footer class="app-footer" role="contentinfo">
+    A learning and first-pass tool, not a certified R155 compliance tool.
+  </footer>
+
+</div><!-- /.app -->
+
+<!-- JavaScript -->
+<script src="js/risk.js"></script>
+<script src="js/export.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
