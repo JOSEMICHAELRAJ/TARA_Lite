@@ -13,9 +13,7 @@ let state = {
 // All component data loaded from threats.json at startup
 let allComponents = [];
 
-// Impact and feasibility options (order matters — matches PRD table and risk.js)
-const IMPACT_LEVELS      = ['Negligible', 'Moderate', 'Major', 'Severe'];
-const FEASIBILITY_LEVELS = ['Very hard', 'Hard', 'Moderate', 'Easy'];
+// IMPACT_LEVELS and FEASIBILITY_LEVELS are declared in risk.js (loaded first).
 
 // ---------------------------------------------------------------------------
 // Boot: fetch data and render home screen

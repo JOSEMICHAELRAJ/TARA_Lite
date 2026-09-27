@@ -6,15 +6,14 @@
   <title>TARA Lite — First-pass Threat Analysis</title>
   <meta name="description" content="A guided tool for running a first-pass Threat Analysis and Risk Assessment (TARA) for vehicle components. UNECE R155 oriented.">
 
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
+
   <!-- Styles -->
   <link rel="stylesheet" href="style.css">
 
-  <!-- html2pdf.js CDN — loaded here for access in export.js (slice 6) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
-          integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+3To5fRkPUAcyptPayuuhn3/538Le9/NI6LNLP3g=="
-          crossorigin="anonymous"
-          referrerpolicy="no-referrer"
-          defer></script>
+  <!-- html2pdf.js — vendored locally (no CDN dependency) -->
+  <script src="vendor/html2pdf.bundle.min.js" defer></script>
 </head>
 <body>
 
