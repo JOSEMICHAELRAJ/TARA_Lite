@@ -12,37 +12,71 @@
   <!-- Styles -->
   <link rel="stylesheet" href="style.css">
 
-  <!-- jsPDF + autotable — vendored locally (no CDN dependency) -->
-  <!-- autotable must load after jsPDF; both must load before app scripts -->
+  <!-- jsPDF + autotable — vendored locally -->
   <script src="vendor/jspdf.umd.min.js"></script>
   <script src="vendor/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
+<!-- Animated Aurora background (CSS shader approximation) -->
+<div class="bg-aurora" aria-hidden="true"></div>
+
 <div class="app">
 
-  <!-- =====================================================================
-       App Header — shown on all screens
-       ===================================================================== -->
+  <!-- ===================================================================
+       Floating pill navbar — matches GlassmorphismNav from template
+       =================================================================== -->
   <header class="app-header" role="banner">
     <div class="app-header__inner">
-      <p class="app-header__title">TARA Lite</p>
-      <p class="app-header__tagline">Run your first threat analysis in 5 minutes.</p>
-      <p class="app-header__context">UNECE R155 requires a TARA for every connected vehicle system. Pick a component to start.</p>
+      <!-- Brand -->
+      <div class="app-header__brand">
+        <span class="app-header__title">TARA Lite</span>
+        <span class="app-header__tagline">Run your first TARA in 5 minutes</span>
+      </div>
+
+      <!-- Actions -->
+      <div class="app-header__actions">
+        <button class="theme-toggle" id="theme-toggle" type="button"
+                aria-label="Toggle theme" title="Toggle theme">
+          <!-- Sun (light mode active) -->
+          <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               aria-hidden="true" style="display:none">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+          </svg>
+          <!-- Moon (dark mode active) -->
+          <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+      </div>
     </div>
   </header>
 
-  <!-- =====================================================================
+  <!-- ===================================================================
        Screen 1 — Home (component selection)
-       ===================================================================== -->
+       =================================================================== -->
   <main id="screen-home" aria-label="Component selection">
-
     <div class="home-main">
+
+      <!-- Hero text -->
+      <div class="home-hero">
+        <div class="home-hero__badge">
+          <span class="home-hero__badge-dot" aria-hidden="true"></span>
+          UNECE R155 · Automotive Cybersecurity
+        </div>
+        <h1 class="home-hero__heading">Your first<br>Threat Analysis,<br>in 5 minutes.</h1>
+        <p class="home-hero__sub">Pick a vehicle component, rate each threat with two sliders, and download a clean PDF you can hand to your manager.</p>
+      </div>
+
       <!-- Component cards — rendered by app.js from threats.json -->
       <div id="component-grid" class="component-grid" role="list"></div>
 
       <!-- Progress hint -->
-      <p class="progress-hint">
+      <div class="progress-hint">
         <span class="progress-hint__steps">
           <span class="progress-hint__step">Pick component</span>
           <span class="progress-hint__arrow" aria-hidden="true">→</span>
@@ -50,21 +84,22 @@
           <span class="progress-hint__arrow" aria-hidden="true">→</span>
           <span class="progress-hint__step">Export report</span>
         </span>
-      </p>
-    </div>
+      </div>
 
+    </div>
   </main>
 
-  <!-- =====================================================================
+  <!-- ===================================================================
        Screen 2 — Threat rating
-       ===================================================================== -->
+       =================================================================== -->
   <main id="screen-rating" aria-label="Threat rating" hidden>
-
     <div class="rating-main">
 
       <!-- Leave warning (shown conditionally) -->
       <div id="leave-warning" class="leave-warning" role="alert" hidden>
-        <span class="leave-warning__text" id="leave-warning-text">Leave this assessment? Your ratings will be lost.</span>
+        <span class="leave-warning__text" id="leave-warning-text">
+          Leave this assessment? Your ratings will be lost.
+        </span>
         <div class="leave-warning__actions">
           <button class="btn-stay" id="btn-stay">Stay</button>
           <button class="btn-leave" id="btn-leave">Leave</button>
@@ -88,21 +123,20 @@
       <!-- Threat cards — rendered by app.js -->
       <div id="threat-stack" class="threat-stack"></div>
 
-      <!-- Footer: progress counter + export button -->
+      <!-- Footer: progress counter + export -->
       <div class="rating-footer">
         <p class="progress-counter" id="progress-counter" aria-live="polite"></p>
         <button class="btn-export" id="btn-export" disabled aria-disabled="true">
-          Export PDF report
+          Export PDF report →
         </button>
       </div>
 
     </div>
-
   </main>
 
-  <!-- =====================================================================
-       Confirmation panel (shown after export — slice 6)
-       ===================================================================== -->
+  <!-- ===================================================================
+       Confirmation panel overlay
+       =================================================================== -->
   <div id="panel-confirmation" class="panel-overlay" role="dialog" aria-modal="true"
        aria-labelledby="panel-title" hidden>
     <div class="panel">
@@ -116,9 +150,9 @@
     </div>
   </div>
 
-  <!-- =====================================================================
-       Risk grid modal (slice 4)
-       ===================================================================== -->
+  <!-- ===================================================================
+       Risk grid modal
+       =================================================================== -->
   <div id="modal-risk-grid" class="modal-overlay" role="dialog" aria-modal="true"
        aria-labelledby="modal-risk-title" hidden>
     <div class="modal">
@@ -139,31 +173,31 @@
         <tbody>
           <tr>
             <th scope="row">Negligible</th>
-            <td class="cell--low"   >Low</td>
-            <td class="cell--low"   >Low</td>
-            <td class="cell--low"   >Low</td>
-            <td class="cell--low"   >Low</td>
+            <td class="cell--low">Low</td>
+            <td class="cell--low">Low</td>
+            <td class="cell--low">Low</td>
+            <td class="cell--low">Low</td>
           </tr>
           <tr>
             <th scope="row">Moderate</th>
-            <td class="cell--low"   >Low</td>
-            <td class="cell--low"   >Low</td>
+            <td class="cell--low">Low</td>
+            <td class="cell--low">Low</td>
             <td class="cell--medium">Medium</td>
             <td class="cell--medium">Medium</td>
           </tr>
           <tr>
             <th scope="row">Major</th>
-            <td class="cell--low"   >Low</td>
+            <td class="cell--low">Low</td>
             <td class="cell--medium">Medium</td>
-            <td class="cell--high"  >High</td>
-            <td class="cell--high"  >High</td>
+            <td class="cell--high">High</td>
+            <td class="cell--high">High</td>
           </tr>
           <tr>
             <th scope="row">Severe</th>
             <td class="cell--medium">Medium</td>
             <td class="cell--medium">Medium</td>
-            <td class="cell--high"  >High</td>
-            <td class="cell--high"  >High</td>
+            <td class="cell--high">High</td>
+            <td class="cell--high">High</td>
           </tr>
         </tbody>
       </table>
@@ -171,9 +205,9 @@
     </div>
   </div>
 
-  <!-- =====================================================================
-       Footer / disclaimer
-       ===================================================================== -->
+  <!-- ===================================================================
+       Footer
+       =================================================================== -->
   <footer class="app-footer" role="contentinfo">
     A learning and first-pass tool, not a certified R155 compliance tool.
   </footer>

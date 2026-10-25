@@ -474,4 +474,50 @@ function escapeHtml(str) {
 // Start
 // ---------------------------------------------------------------------------
 
-document.addEventListener('DOMContentLoaded', init);
+// ---------------------------------------------------------------------------
+// Theme — dark default, persists to localStorage
+// ---------------------------------------------------------------------------
+
+const THEME_KEY = 'tara-theme';
+
+function initTheme() {
+  const stored = localStorage.getItem(THEME_KEY);
+  // Only light is a stored override — dark is the CSS default
+  if (stored === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+  }
+  syncThemeToggle();
+}
+
+function toggleTheme() {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  if (isLight) {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem(THEME_KEY, 'dark');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'light');
+    localStorage.setItem(THEME_KEY, 'light');
+  }
+  syncThemeToggle();
+}
+
+function syncThemeToggle() {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const sun  = document.getElementById('icon-sun');
+  const moon = document.getElementById('icon-moon');
+  if (sun)  sun.style.display  = isLight ? 'block' : 'none';
+  if (moon) moon.style.display = isLight ? 'none'  : 'block';
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.setAttribute('aria-label', isLight ? 'Switch to dark theme' : 'Switch to light theme');
+}
+
+// ---------------------------------------------------------------------------
+// Start
+// ---------------------------------------------------------------------------
+
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  const toggle = document.getElementById('theme-toggle');
+  if (toggle) toggle.addEventListener('click', toggleTheme);
+  init();
+});
