@@ -51,7 +51,7 @@ A user picks "Telematics Unit," sees its threats with plain-English descriptions
 - All threat data hardcoded in a single JSON file — written by the learner before build, dropped straight in. No login, no database, no backend, no API calls
 
 **Out of scope for PoC:**
-- Additional components beyond the three above
+- Additional acomponents beyond the three above
 - User-entered custom threats
 - AI-generated content
 - Any backend or server
