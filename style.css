@@ -77,6 +77,39 @@
 }
 
 /* ---------------------------------------------------------------------------
+   Light theme — original TARA spec look, activated by data-theme="light"
+   --------------------------------------------------------------------------- */
+[data-theme="light"] {
+  --bg:              #f7f8fa;
+  --bg-gradient:     none;
+
+  --surface:         #ffffff;
+  --surface-hover:   #f1f5f9;
+  --surface-solid:   #ffffff;
+
+  --border:          #e2e8f0;
+  --border-strong:   #cbd5e1;
+
+  --text:            #1e293b;
+  --text-muted:      #64748b;
+  --text-subtle:     #94a3b8;
+
+  /* Risk backgrounds are lighter in light mode */
+  --risk-low-bg:     #bbf7d0;
+  --risk-low-text:   #15803d;
+  --risk-medium-bg:  #fde68a;
+  --risk-medium-text:#92400e;
+  --risk-high-bg:    #fecaca;
+  --risk-high-text:  #991b1b;
+  --risk-unrated:    #94a3b8;
+  --risk-unrated-bg: #f1f5f9;
+
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.10);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
+}
+
+/* ---------------------------------------------------------------------------
    Reset & base
    --------------------------------------------------------------------------- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -86,6 +119,9 @@ html {
   -webkit-text-size-adjust: 100%;
   color-scheme: dark;
 }
+
+/* Switch browser chrome (scrollbars, inputs) to light when the theme is light */
+[data-theme="light"] { color-scheme: light; }
 
 body {
   font-family: var(--font);
@@ -129,6 +165,9 @@ a { color: inherit; text-decoration: underline; }
   animation: aurora-drift 12s ease-in-out infinite alternate;
 }
 
+/* Hide Aurora glow layers in light mode */
+[data-theme="light"] .bg-aurora::before,
+[data-theme="light"] .bg-aurora::after { display: none; }
 .bg-aurora::after {
   content: '';
   position: absolute;
@@ -186,12 +225,17 @@ a { color: inherit; text-decoration: underline; }
   gap: var(--sp-md);
 
   /* The pill */
-  background: rgba(255,255,255,0.08);
+  background: var(--surface);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border);
   border-radius: var(--r-full);
   padding: 0.625rem var(--sp-lg);
+}
+
+/* Light mode pill needs a solid background so it's visible */
+[data-theme="light"] .app-header__inner {
+  background: rgba(255,255,255,0.85);
 }
 
 .app-header__brand {
